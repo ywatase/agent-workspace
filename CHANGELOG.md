@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.0](https://github.com/hiragram/agent-workspace/compare/v0.5.0...v0.6.0) (2026-03-01)
+
+
+### Features
+
+* add on-end lifecycle hook ([e59a776](https://github.com/hiragram/agent-workspace/commit/e59a7766b97ffb61bd3bfb0bb97c7b9e2bc5dbbb))
+* add on-end lifecycle hook for worktree profiles ([9e64201](https://github.com/hiragram/agent-workspace/commit/9e642016c548b307ccdcebb4382b7690a3e20c94))
+
 ## [0.5.0](https://github.com/hiragram/agent-workspace/compare/v0.4.0...v0.5.0) (2026-03-01)
 
 
