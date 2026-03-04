@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.1](https://github.com/hiragram/agent-workspace/compare/v0.8.0...v0.8.1) (2026-03-04)
+
+
+### Bug Fixes
+
+* use already-built Docker image in zellij claude pane ([26f5f40](https://github.com/hiragram/agent-workspace/commit/26f5f40b69bec67385b75a0b3a2ec6b6e3e32c66))
+* use already-built Docker image in zellij claude pane ([513d63f](https://github.com/hiragram/agent-workspace/commit/513d63f5fdf5c652ddd259158a2c9d2d43aec4d5))
+
 ## [0.8.0](https://github.com/hiragram/agent-workspace/compare/v0.7.1...v0.8.0) (2026-03-04)
 
 
