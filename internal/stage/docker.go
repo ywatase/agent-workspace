@@ -2,6 +2,7 @@ package stage
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"os"
 	"os/exec"
@@ -61,8 +62,20 @@ func (s *DockerStage) Run(ctx context.Context, ec *pipeline.ExecutionContext) er
 	}
 	defer cleanup()
 
-	fmt.Fprintf(os.Stderr, "Building Docker image '%s'...\n", defaultImageName)
-	if err := s.DockerClient.Build(ctx, defaultImageName, buildDir); err != nil {
+	// Compute image tag from Dockerfile content hash to bust Docker cache
+	// when the Dockerfile changes.
+	imageName := defaultImageName
+	if dfBytes, err := os.ReadFile(filepath.Join(buildDir, "Dockerfile")); err == nil {
+		hash := fmt.Sprintf("%x", sha256.Sum256(dfBytes))[:12]
+		imageName = fmt.Sprintf("%s:%s", defaultImageName, hash)
+	}
+
+	if customDockerfile != "" {
+		fmt.Fprintf(os.Stderr, "Building Docker image '%s' (custom Dockerfile: %s)...\n", imageName, ec.Profile.Dockerfile)
+	} else {
+		fmt.Fprintf(os.Stderr, "Building Docker image '%s'...\n", imageName)
+	}
+	if err := s.DockerClient.Build(ctx, imageName, buildDir); err != nil {
 		return fmt.Errorf("building image: %w", err)
 	}
 
@@ -99,7 +112,7 @@ func (s *DockerStage) Run(ctx context.Context, ec *pipeline.ExecutionContext) er
 	}
 
 	// 7. Update execution context
-	ec.DockerImage = defaultImageName
+	ec.DockerImage = imageName
 	ec.DockerMounts = mounts
 	ec.DockerVolume = defaultVolumeName
 
