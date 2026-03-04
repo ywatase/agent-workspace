@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.0](https://github.com/hiragram/agent-workspace/compare/v0.7.1...v0.8.0) (2026-03-04)
+
+
+### Features
+
+* add default-dockerfile command and custom Dockerfile support ([4e3308c](https://github.com/hiragram/agent-workspace/commit/4e3308caa250e07ec7b3dadde8f81193edcceab8))
+* add default-dockerfile command and custom Dockerfile support ([227b61d](https://github.com/hiragram/agent-workspace/commit/227b61df6067a40ca72af24916d8f62c668f39a9))
+
 ## [0.7.1](https://github.com/hiragram/agent-workspace/compare/v0.7.0...v0.7.1) (2026-03-01)
 
 
