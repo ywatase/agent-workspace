@@ -35,6 +35,10 @@ func (l *ClaudeLauncher) launchHostClaude(ec *pipeline.ExecutionContext) error {
 
 	fmt.Fprintf(os.Stderr, "Launching Claude in %s\n", ec.WorkDir)
 
+	if err := reopenTTY(); err != nil {
+		return fmt.Errorf("reopening tty: %w", err)
+	}
+
 	args := []string{"claude"}
 	// Use syscall.Exec to replace the current process
 	env := os.Environ()
