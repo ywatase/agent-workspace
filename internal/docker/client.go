@@ -84,7 +84,7 @@ func (c *ShellClient) VolumeCreate(ctx context.Context, volumeName string) error
 // BuildRunArgs constructs the docker CLI arguments for a RunConfig.
 // This is exported for testing.
 func BuildRunArgs(config RunConfig) []string {
-	args := []string{"run", "-it", "--rm"}
+	args := []string{"run", "-it", "--rm", "--init"}
 
 	for key, val := range config.EnvVars {
 		args = append(args, "-e", fmt.Sprintf("%s=%s", key, val))

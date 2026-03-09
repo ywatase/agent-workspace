@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"syscall"
 
@@ -61,6 +62,14 @@ func (l *ClaudeLauncher) launchDockerClaude(ctx context.Context, ec *pipeline.Ex
 		WorkDir:   ec.WorkDir,
 		Command:   command,
 	}
+
+	// SIGINT/SIGTERM を aw プロセスでは無視し、docker に直接届くようにする。
+	// docker run -it は同一プロセスグループ内で SIGINT を受け取り、
+	// コンテナ内のプロセスに転送する。aw が先に死ぬと docker が孤児になるため、
+	// aw は docker の終了を待つ必要がある。
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+	defer signal.Stop(sig)
 
 	return client.Run(ctx, runConfig)
 }
