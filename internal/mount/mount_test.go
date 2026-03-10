@@ -135,6 +135,49 @@ func TestBuildMounts_GhConfigWhenPresent(t *testing.T) {
 	}
 }
 
+func TestBuildMounts_GlabConfigWhenPresent(t *testing.T) {
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+
+	if err := os.MkdirAll(filepath.Join(homeDir, ".config", "glab-cli"), 0755); err != nil {
+		t.Fatalf("creating .config/glab-cli: %v", err)
+	}
+
+	opts := newTestOpts(homeDir, workDir)
+	builder := NewBuilder()
+	mounts, err := builder.BuildMounts(opts)
+	if err != nil {
+		t.Fatalf("BuildMounts() error: %v", err)
+	}
+
+	m := findMount(mounts, "/home/claude/.config-glab-cli-host")
+	if m == nil {
+		t.Fatal("missing .config-glab-cli-host mount")
+	}
+	if !m.ReadOnly {
+		t.Error(".config/glab-cli mount should be read-only")
+	}
+	if m.Source != filepath.Join(homeDir, ".config", "glab-cli") {
+		t.Errorf("source = %q, want %q", m.Source, filepath.Join(homeDir, ".config", "glab-cli"))
+	}
+}
+
+func TestBuildMounts_NoGlabConfigWhenMissing(t *testing.T) {
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+
+	opts := newTestOpts(homeDir, workDir)
+	builder := NewBuilder()
+	mounts, err := builder.BuildMounts(opts)
+	if err != nil {
+		t.Fatalf("BuildMounts() error: %v", err)
+	}
+
+	if findMount(mounts, "/home/claude/.config-glab-cli-host") != nil {
+		t.Error(".config-glab-cli-host mount should not exist when directory is missing")
+	}
+}
+
 func TestBuildMounts_SSHReadOnly(t *testing.T) {
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
