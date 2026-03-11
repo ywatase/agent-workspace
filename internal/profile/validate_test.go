@@ -91,6 +91,23 @@ func TestValidate(t *testing.T) {
 			},
 			wantErr: "dockerfile is only valid with environment: docker",
 		},
+		{
+			name: "valid docker with ssh_key",
+			profile: Profile{
+				Environment: EnvironmentDocker,
+				Launch:      LaunchClaude,
+				SSHKey:      "~/.ssh/id_ed25519",
+			},
+		},
+		{
+			name: "ssh_key with non-docker environment",
+			profile: Profile{
+				Environment: EnvironmentHost,
+				Launch:      LaunchShell,
+				SSHKey:      "~/.ssh/id_ed25519",
+			},
+			wantErr: "ssh_key is only valid with environment: docker",
+		},
 	}
 
 	for _, tt := range tests {

@@ -135,46 +135,130 @@ func TestBuildMounts_GhConfigWhenPresent(t *testing.T) {
 	}
 }
 
-func TestBuildMounts_SSHReadOnly(t *testing.T) {
+func TestBuildMounts_SSHKeyMountsIndividualFiles(t *testing.T) {
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 
-	if err := os.MkdirAll(filepath.Join(homeDir, ".ssh"), 0700); err != nil {
+	// Create SSH key files
+	sshDir := filepath.Join(homeDir, ".ssh")
+	if err := os.MkdirAll(sshDir, 0700); err != nil {
 		t.Fatalf("creating .ssh: %v", err)
+	}
+	keyPath := filepath.Join(sshDir, "id_ed25519")
+	if err := os.WriteFile(keyPath, []byte("private-key"), 0600); err != nil {
+		t.Fatalf("writing key: %v", err)
+	}
+	if err := os.WriteFile(keyPath+".pub", []byte("public-key"), 0644); err != nil {
+		t.Fatalf("writing pub key: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(sshDir, "config"), []byte("Host *"), 0644); err != nil {
+		t.Fatalf("writing config: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(sshDir, "known_hosts"), []byte("github.com ..."), 0644); err != nil {
+		t.Fatalf("writing known_hosts: %v", err)
 	}
 
 	opts := newTestOpts(homeDir, workDir)
+	opts.SSHKeyPath = keyPath
 	builder := NewBuilder()
 	mounts, err := builder.BuildMounts(opts)
 	if err != nil {
 		t.Fatalf("BuildMounts() error: %v", err)
 	}
 
-	m := findMount(mounts, "/home/claude/.ssh-host")
+	// Private key
+	m := findMount(mounts, "/home/claude/.ssh-host/id_ed25519")
 	if m == nil {
-		t.Fatal("missing .ssh-host mount")
+		t.Fatal("missing private key mount")
 	}
 	if !m.ReadOnly {
-		t.Error(".ssh mount should be read-only")
+		t.Error("private key mount should be read-only")
 	}
-	if m.Source != filepath.Join(homeDir, ".ssh") {
-		t.Errorf("source = %q, want %q", m.Source, filepath.Join(homeDir, ".ssh"))
+	if m.Source != keyPath {
+		t.Errorf("source = %q, want %q", m.Source, keyPath)
+	}
+
+	// Public key
+	m = findMount(mounts, "/home/claude/.ssh-host/id_ed25519.pub")
+	if m == nil {
+		t.Fatal("missing public key mount")
+	}
+	if !m.ReadOnly {
+		t.Error("public key mount should be read-only")
+	}
+
+	// config
+	m = findMount(mounts, "/home/claude/.ssh-host/config")
+	if m == nil {
+		t.Fatal("missing config mount")
+	}
+
+	// known_hosts
+	m = findMount(mounts, "/home/claude/.ssh-host/known_hosts")
+	if m == nil {
+		t.Fatal("missing known_hosts mount")
 	}
 }
 
-func TestBuildMounts_NoSSHWhenMissing(t *testing.T) {
+func TestBuildMounts_NoSSHWhenKeyNotSpecified(t *testing.T) {
 	homeDir := t.TempDir()
 	workDir := t.TempDir()
 
+	// Even if .ssh directory exists, no mounts when SSHKeyPath is empty
+	sshDir := filepath.Join(homeDir, ".ssh")
+	if err := os.MkdirAll(sshDir, 0700); err != nil {
+		t.Fatalf("creating .ssh: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(sshDir, "id_ed25519"), []byte("key"), 0600); err != nil {
+		t.Fatalf("writing key: %v", err)
+	}
+
 	opts := newTestOpts(homeDir, workDir)
+	// SSHKeyPath is empty (default)
 	builder := NewBuilder()
 	mounts, err := builder.BuildMounts(opts)
 	if err != nil {
 		t.Fatalf("BuildMounts() error: %v", err)
 	}
 
-	if findMount(mounts, "/home/claude/.ssh-host") != nil {
-		t.Error(".ssh-host mount should not exist when .ssh is missing")
+	for _, m := range mounts {
+		if filepath.Dir(m.Target) == "/home/claude/.ssh-host" {
+			t.Errorf("unexpected SSH mount: %+v", m)
+		}
+	}
+}
+
+func TestBuildMounts_SSHKeyPubMissingOk(t *testing.T) {
+	homeDir := t.TempDir()
+	workDir := t.TempDir()
+
+	// Create only private key, no .pub
+	sshDir := filepath.Join(homeDir, ".ssh")
+	if err := os.MkdirAll(sshDir, 0700); err != nil {
+		t.Fatalf("creating .ssh: %v", err)
+	}
+	keyPath := filepath.Join(sshDir, "id_rsa")
+	if err := os.WriteFile(keyPath, []byte("private-key"), 0600); err != nil {
+		t.Fatalf("writing key: %v", err)
+	}
+
+	opts := newTestOpts(homeDir, workDir)
+	opts.SSHKeyPath = keyPath
+	builder := NewBuilder()
+	mounts, err := builder.BuildMounts(opts)
+	if err != nil {
+		t.Fatalf("BuildMounts() error: %v", err)
+	}
+
+	// Private key should be mounted
+	m := findMount(mounts, "/home/claude/.ssh-host/id_rsa")
+	if m == nil {
+		t.Fatal("missing private key mount")
+	}
+
+	// Public key should NOT be mounted (doesn't exist)
+	if findMount(mounts, "/home/claude/.ssh-host/id_rsa.pub") != nil {
+		t.Error("public key mount should not exist when .pub file is missing")
 	}
 }
 

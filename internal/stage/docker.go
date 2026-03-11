@@ -99,6 +99,8 @@ func (s *DockerStage) Run(ctx context.Context, ec *pipeline.ExecutionContext) er
 	}
 
 	// 6. Build mounts
+	sshKeyPath := expandTilde(ec.Profile.SSHKey, ec.HomeDir)
+
 	mounts, err := s.MountBuilder.BuildMounts(mount.MountOptions{
 		HomeDir:             ec.HomeDir,
 		WorkDir:             ec.WorkDir,
@@ -106,6 +108,7 @@ func (s *DockerStage) Run(ctx context.Context, ec *pipeline.ExecutionContext) er
 		ContainerClaudeHome: containerClaudeHome,
 		ContainerClaudeJSON: containerClaudeJSON,
 		VolumeName:          defaultVolumeName,
+		SSHKeyPath:          sshKeyPath,
 	})
 	if err != nil {
 		return fmt.Errorf("building mounts: %w", err)
@@ -134,6 +137,20 @@ func resolveDockerfilePath(dockerfilePath string) (string, error) {
 	}
 	repoRoot := strings.TrimSpace(string(out))
 	return filepath.Join(repoRoot, dockerfilePath), nil
+}
+
+// expandTilde replaces a leading "~/" with homeDir.
+func expandTilde(path, homeDir string) string {
+	if path == "" {
+		return ""
+	}
+	if path == "~" {
+		return homeDir
+	}
+	if strings.HasPrefix(path, "~/") {
+		return filepath.Join(homeDir, path[2:])
+	}
+	return path
 }
 
 func claudeHomePath(homeDir string) string {

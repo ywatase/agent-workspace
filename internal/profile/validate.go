@@ -37,6 +37,11 @@ func Validate(p Profile) error {
 		return fmt.Errorf("dockerfile is only valid with environment: docker")
 	}
 
+	// Validate ssh_key is only used with environment: docker
+	if p.SSHKey != "" && p.Environment != EnvironmentDocker {
+		return fmt.Errorf("ssh_key is only valid with environment: docker")
+	}
+
 	return nil
 }
 

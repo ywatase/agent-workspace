@@ -15,6 +15,7 @@ type MountOptions struct {
 	ContainerClaudeHome string // host ~/.agent-workspace
 	ContainerClaudeJSON string // host ~/.agent-workspace.json
 	VolumeName          string // Docker volume name for Claude installation
+	SSHKeyPath          string // SSH private key path (optional)
 }
 
 // Builder constructs Docker mount arguments.
@@ -54,7 +55,7 @@ func (b *DefaultBuilder) BuildMounts(opts MountOptions) ([]docker.Mount, error) 
 	})
 
 	// Optional host mounts
-	mounts = append(mounts, optionalMounts(opts.HomeDir)...)
+	mounts = append(mounts, optionalMounts(opts.HomeDir, opts.SSHKeyPath)...)
 
 	// Worktree mount
 	worktreeMount, err := worktreeMount(opts.WorkDir)
@@ -69,7 +70,7 @@ func (b *DefaultBuilder) BuildMounts(opts MountOptions) ([]docker.Mount, error) 
 }
 
 // optionalMounts returns mounts for host files that may or may not exist.
-func optionalMounts(homeDir string) []docker.Mount {
+func optionalMounts(homeDir, sshKeyPath string) []docker.Mount {
 	var mounts []docker.Mount
 
 	// .gitconfig
@@ -90,12 +91,55 @@ func optionalMounts(homeDir string) []docker.Mount {
 		})
 	}
 
-	// .ssh (mounted read-only to .ssh-host, entrypoint copies it)
-	sshDir := filepath.Join(homeDir, ".ssh")
-	if dirExists(sshDir) {
+	// SSH key files (individual file mounts when ssh_key is specified)
+	mounts = append(mounts, sshKeyMounts(homeDir, sshKeyPath)...)
+
+	return mounts
+}
+
+// sshKeyMounts returns individual SSH file mounts when sshKeyPath is specified.
+func sshKeyMounts(homeDir, sshKeyPath string) []docker.Mount {
+	if sshKeyPath == "" {
+		return nil
+	}
+
+	var mounts []docker.Mount
+
+	// Private key (required)
+	if fileExists(sshKeyPath) {
 		mounts = append(mounts, docker.Mount{
-			Source:   sshDir,
-			Target:   "/home/claude/.ssh-host",
+			Source:   sshKeyPath,
+			Target:   "/home/claude/.ssh-host/" + filepath.Base(sshKeyPath),
+			ReadOnly: true,
+		})
+	}
+
+	// Public key (optional)
+	pubKey := sshKeyPath + ".pub"
+	if fileExists(pubKey) {
+		mounts = append(mounts, docker.Mount{
+			Source:   pubKey,
+			Target:   "/home/claude/.ssh-host/" + filepath.Base(pubKey),
+			ReadOnly: true,
+		})
+	}
+
+	// ~/.ssh/config (optional)
+	sshConfig := filepath.Join(homeDir, ".ssh", "config")
+	if fileExists(sshConfig) {
+		mounts = append(mounts, docker.Mount{
+			Source:   sshConfig,
+			Target:   "/home/claude/.ssh-host/config",
+			ReadOnly: true,
+		})
+	}
+
+	// ~/.ssh/known_hosts (optional)
+	knownHosts := filepath.Join(homeDir, ".ssh", "known_hosts")
+	if fileExists(knownHosts) {
+		mounts = append(mounts, docker.Mount{
+			Source:   knownHosts,
+			Target:   "/home/claude/.ssh-host/known_hosts",
 			ReadOnly: true,
 		})
 	}
