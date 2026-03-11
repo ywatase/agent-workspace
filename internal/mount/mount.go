@@ -90,6 +90,16 @@ func optionalMounts(homeDir string) []docker.Mount {
 		})
 	}
 
+	// .config/glab-cli (mounted read-only, entrypoint copies it)
+	glabConfig := filepath.Join(homeDir, ".config", "glab-cli")
+	if dirExists(glabConfig) {
+		mounts = append(mounts, docker.Mount{
+			Source:   glabConfig,
+			Target:   "/home/claude/.config-glab-cli-host",
+			ReadOnly: true,
+		})
+	}
+
 	// .ssh (mounted read-only to .ssh-host, entrypoint copies it)
 	sshDir := filepath.Join(homeDir, ".ssh")
 	if dirExists(sshDir) {

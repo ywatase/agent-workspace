@@ -1,7 +1,7 @@
 FROM debian:bookworm-slim
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends git curl ca-certificates wget openssh-client \
+    apt-get install -y --no-install-recommends git curl ca-certificates wget openssh-client jq \
       python3 python3-pip python3-venv && \
     rm -rf /var/lib/apt/lists/*
 
@@ -26,6 +26,12 @@ RUN ARCH="$(dpkg --print-architecture)" && \
     elif [ "$ARCH" = "arm64" ]; then GOARCH="arm64"; \
     else echo "Unsupported architecture: $ARCH" && exit 1; fi && \
     curl -fsSL "https://go.dev/dl/go1.23.6.linux-${GOARCH}.tar.gz" | tar -C /usr/local -xz
+
+# GitLab CLI (glab)
+RUN GLAB_VERSION=$(curl -fsSL "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/releases/permalink/latest" | jq -r '.tag_name' | sed 's/^v//') \
+    && curl -fsSL "https://gitlab.com/gitlab-org/cli/-/releases/v${GLAB_VERSION}/downloads/glab_${GLAB_VERSION}_linux_$(dpkg --print-architecture).deb" -o /tmp/glab.deb \
+    && dpkg -i /tmp/glab.deb \
+    && rm /tmp/glab.deb
 
 RUN useradd -m -s /bin/bash claude
 
