@@ -19,7 +19,8 @@ fi
 
 # Copy and fix permissions on mounted .ssh (read-only mount, so copy first)
 if [ -d /home/claude/.ssh-host ]; then
-  cp -a /home/claude/.ssh-host /home/claude/.ssh
+  mkdir -p /home/claude/.ssh
+  find /home/claude/.ssh-host -maxdepth 1 -type f -exec cp {} /home/claude/.ssh/ \;
   chown -R claude:claude /home/claude/.ssh
   chmod 700 /home/claude/.ssh
   chmod 600 /home/claude/.ssh/* 2>/dev/null || true

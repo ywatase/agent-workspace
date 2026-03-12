@@ -19,8 +19,9 @@ type Profile struct {
 	Environment Environment       `yaml:"environment"`
 	Launch      LaunchMode        `yaml:"launch"`
 	Zellij      *ZellijConfig     `yaml:"zellij,omitempty"`
-	Env         map[string]string `yaml:"env,omitempty"`    // custom env vars to pass into Docker container
+	Env         map[string]string `yaml:"env,omitempty"`        // custom env vars to pass into Docker container
 	Dockerfile  string            `yaml:"dockerfile,omitempty"` // custom Dockerfile path (docker environment only)
+	SSHKey      string            `yaml:"ssh_key,omitempty"`    // SSH private key path (docker environment only)
 }
 
 // WorktreeConfig controls git worktree creation.

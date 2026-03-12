@@ -121,3 +121,54 @@ func TestDockerStage_NewDockerStage(t *testing.T) {
 		t.Error("MountBuilder should not be nil")
 	}
 }
+
+func TestExpandTilde(t *testing.T) {
+	homeDir := "/home/testuser"
+
+	tests := []struct {
+		name     string
+		path     string
+		homeDir  string
+		expected string
+	}{
+		{
+			name:     "empty string",
+			path:     "",
+			homeDir:  homeDir,
+			expected: "",
+		},
+		{
+			name:     "tilde only",
+			path:     "~",
+			homeDir:  homeDir,
+			expected: homeDir,
+		},
+		{
+			name:     "tilde with path",
+			path:     "~/path",
+			homeDir:  homeDir,
+			expected: "/home/testuser/path",
+		},
+		{
+			name:     "absolute path unchanged",
+			path:     "/absolute/path",
+			homeDir:  homeDir,
+			expected: "/absolute/path",
+		},
+		{
+			name:     "relative path unchanged",
+			path:     "relative/path",
+			homeDir:  homeDir,
+			expected: "relative/path",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := expandTilde(tt.path, tt.homeDir)
+			if got != tt.expected {
+				t.Errorf("expandTilde(%q, %q) = %q, want %q", tt.path, tt.homeDir, got, tt.expected)
+			}
+		})
+	}
+}
