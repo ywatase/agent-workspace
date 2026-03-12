@@ -23,7 +23,7 @@ if [ -d /home/claude/.ssh-host ]; then
   find /home/claude/.ssh-host -maxdepth 1 -type f -exec cp {} /home/claude/.ssh/ \;
   chown -R claude:claude /home/claude/.ssh
   chmod 700 /home/claude/.ssh
-  chmod 600 /home/claude/.ssh/id_* 2>/dev/null || true
+  chmod 600 /home/claude/.ssh/* 2>/dev/null || true
   chmod 644 /home/claude/.ssh/*.pub 2>/dev/null || true
   chmod 644 /home/claude/.ssh/known_hosts 2>/dev/null || true
   chmod 644 /home/claude/.ssh/config 2>/dev/null || true
@@ -32,6 +32,13 @@ fi
 # Fix permissions on mounted .config/gh
 if [ -d /home/claude/.config/gh ]; then
   chown -R claude:claude /home/claude/.config
+fi
+
+# Copy and fix permissions on mounted .config/glab-cli (read-only mount, so copy first)
+if [ -d /home/claude/.config-glab-cli-host ] && [ -n "$(ls -A /home/claude/.config-glab-cli-host 2>/dev/null)" ]; then
+  mkdir -p /home/claude/.config/glab-cli
+  cp -r /home/claude/.config-glab-cli-host/* /home/claude/.config/glab-cli/
+  chown -R claude:claude /home/claude/.config/glab-cli
 fi
 
 # Fix permissions on mounted .gitconfig
