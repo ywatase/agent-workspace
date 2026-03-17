@@ -33,6 +33,10 @@ RUN GLAB_VERSION=$(curl -fsSL "https://gitlab.com/api/v4/projects/gitlab-org%2Fc
     && dpkg -i /tmp/glab.deb \
     && rm /tmp/glab.deb
 
+# Playwright: system dependencies + Chromium browser
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/playwright-browsers
+RUN npx playwright install --with-deps chromium
+
 RUN useradd -m -s /bin/bash claude
 
 ENV PATH="/usr/local/go/bin:/home/claude/.local/bin:${PATH}"
